@@ -40,12 +40,19 @@ func NewMetrics() *MetricsService {
 
 func (m *MetricsService) Run(stream chan int64) {
 	go func() {
+		count := 0
 		for o := range stream {
-			if o > 0 {
-				m.observations.WithLabelValues("fiber").Observe(float64(o) / 1000)
-			} else {
-				m.observations.WithLabelValues("infura").Observe(-float64(o) / 1000)
+			count++
+
+			if count >= 100 {
+				if o > 0 {
+					m.observations.WithLabelValues("fiber").Observe(float64(o) / 1000)
+				} else {
+					m.observations.WithLabelValues("infura").Observe(-float64(o) / 1000)
+				}
 			}
+
+			count = 0
 		}
 	}()
 
