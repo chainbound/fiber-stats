@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -50,6 +51,7 @@ func (m *MetricsService) Run(stream chan int64) {
 				// If the latency is larger than 500 milliseconds when Infura wins,
 				// we consider it a bad measurement and discard it.
 				if millis > -500 {
+					fmt.Println("New observation:", millis)
 					if millis > 0 {
 						m.observations.WithLabelValues("fiber").Observe(millis)
 					} else {
