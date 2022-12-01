@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -35,7 +34,7 @@ func NewMetrics() *MetricsService {
 		observations: promauto.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "fiber_infura_latency",
 			Help:    "Latency between fiber and infura.",
-			Buckets: []float64{0, 5, 10, 25, 50, 100, 250, 500, 1000},
+			Buckets: []float64{0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500},
 		}, []string{"winner"}),
 	}
 }
@@ -47,14 +46,18 @@ func (m *MetricsService) Run(stream chan int64) {
 			count++
 
 			if count >= 10 {
-				fmt.Println("Observing value", float64(o)/1000)
-				if o > 0 {
-					m.observations.WithLabelValues("fiber").Observe(float64(o) / 1000)
-				} else {
-					m.observations.WithLabelValues("infura").Observe(-float64(o) / 1000)
+				millis := float64(o) / 1000
+				// If the latency is larger than 500 milliseconds when Infura wins,
+				// we consider it a bad measurement and discard it.
+				if millis > -500 {
+					if millis > 0 {
+						m.observations.WithLabelValues("fiber").Observe(millis)
+					} else {
+						m.observations.WithLabelValues("infura").Observe(millis)
+					}
+					count = 0
 				}
 
-				count = 0
 			}
 
 		}
