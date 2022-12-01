@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -45,6 +46,7 @@ func (m *MetricsService) Run(stream chan int64) {
 			count++
 
 			if count >= 100 {
+				fmt.Println("Observing value", o)
 				if o > 0 {
 					m.observations.WithLabelValues("fiber").Observe(float64(o) / 1000)
 				} else {
