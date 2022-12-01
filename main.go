@@ -33,8 +33,9 @@ type MetricsService struct {
 func NewMetrics() *MetricsService {
 	return &MetricsService{
 		observations: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name: "fiber_infura_latency",
-			Help: "Latency between fiber and infura.",
+			Name:    "fiber_infura_latency",
+			Help:    "Latency between fiber and infura.",
+			Buckets: []float64{0, 5, 10, 25, 50, 100, 250, 500, 1000},
 		}, []string{"winner"}),
 	}
 }
@@ -46,7 +47,7 @@ func (m *MetricsService) Run(stream chan int64) {
 			count++
 
 			if count >= 10 {
-				fmt.Println("Observing value", o)
+				fmt.Println("Observing value", float64(o)/1000)
 				if o > 0 {
 					m.observations.WithLabelValues("fiber").Observe(float64(o) / 1000)
 				} else {
