@@ -45,7 +45,7 @@ func (m *MetricsService) Run(stream chan int64) {
 		for o := range stream {
 			count++
 
-			if count >= 100 {
+			if count >= 10 {
 				fmt.Println("Observing value", o)
 				if o > 0 {
 					m.observations.WithLabelValues("fiber").Observe(float64(o) / 1000)
