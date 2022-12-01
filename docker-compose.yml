@@ -13,8 +13,6 @@ services:
     build: .
     container_name: fiber-stats
     restart: unless-stopped
-    ports:
-      - 2112:2112
     networks:
       - internal
 
@@ -27,8 +25,8 @@ services:
       - prometheus_data:/prometheus
     networks:
       - internal
-    ports:
-      - 9090:9090
+    depends_on:
+      - fiber-stats
   
   grafana:
     image: grafana/grafana
@@ -41,3 +39,5 @@ services:
       - internal
     ports:
       - 80:3000
+    depends_on:
+      - prometheus
