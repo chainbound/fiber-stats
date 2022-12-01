@@ -37,6 +37,8 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
     networks:
       - internal
+    environment:
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
     ports:
       - 80:3000
     depends_on:
