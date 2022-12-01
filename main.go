@@ -55,7 +55,7 @@ func (m *MetricsService) Run(stream chan int64) {
 					if millis > 0 {
 						m.observations.WithLabelValues("fiber").Observe(millis)
 					} else {
-						m.observations.WithLabelValues("infura").Observe(millis)
+						m.observations.WithLabelValues("infura").Observe(-millis)
 					}
 					count = 0
 				}
