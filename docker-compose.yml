@@ -13,6 +13,8 @@ services:
     build: .
     container_name: fiber-stats
     restart: unless-stopped
+    ports:
+      - 2112:2112
     networks:
       - internal
 
