@@ -52,9 +52,10 @@ func (m *MetricsService) Run(stream chan int64) {
 				} else {
 					m.observations.WithLabelValues("infura").Observe(-float64(o) / 1000)
 				}
+
+				count = 0
 			}
 
-			count = 0
 		}
 	}()
 
