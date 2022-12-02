@@ -21,4 +21,5 @@ docker compose up --build -d
 ```
 
 This will start a Grafana server on 0.0.0.0:80. You can change the ports in `docker-compose.yml`.
+You can then navigate to the **Fiber Stats** dashboard.
 
