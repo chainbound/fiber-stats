@@ -61,8 +61,8 @@ func (m *MetricsService) Run(stream chan Collision) {
 				millis := float64(c.Diff) / 1000
 				// If the latency is larger than 500 milliseconds when Infura wins,
 				// we consider it a bad measurement and discard it.
-				if millis > -500 {
-					fmt.Println("New observation:", millis)
+				if millis > -2000 {
+					fmt.Println("New observation:", c)
 					if millis > 0 {
 						m.observations.WithLabelValues(c.Winner).Observe(millis)
 					} else {
