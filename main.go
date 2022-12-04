@@ -4,58 +4,69 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
-	fiber "github.com/chainbound/fiber-go"
+	"github.com/BurntSushi/toml"
+	"github.com/chainbound/fiber-stats/sources"
 	"github.com/chainbound/shardmap"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient/gethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type Ingester struct {
-	client      *gethclient.Client
-	fiberClient *fiber.Client
+type Config struct {
+	Sources map[string]SourceConfig
+}
 
-	infuraResults *shardmap.FIFOMap[string, int64]
-	fiberResults  *shardmap.FIFOMap[string, int64]
+type SourceConfig struct {
+	Endpoint string
+	Key      string
+}
+
+type Ingester struct {
+	sources map[string]MempoolSource
+	results map[string]*shardmap.FIFOMap[string, int64]
+
+	// infuraResults *shardmap.FIFOMap[string, int64]
+	// fiberResults  *shardmap.FIFOMap[string, int64]
 }
 
 type MetricsService struct {
 	observations *prometheus.HistogramVec
 }
 
+type MempoolSource interface {
+	SubscribePendingTransactions(ctx context.Context) (chan common.Hash, error)
+}
+
 func NewMetrics() *MetricsService {
 	return &MetricsService{
 		observations: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "fiber_node_latency",
-			Help:    "Latency between Fiber and your node.",
+			Name:    "fiber_latency_diff",
+			Help:    "Latency between Fiber and other mempool sources",
 			Buckets: []float64{0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500},
 		}, []string{"winner"}),
 	}
 }
 
-func (m *MetricsService) Run(stream chan int64) {
+func (m *MetricsService) Run(stream chan Collision) {
 	go func() {
 		count := 0
-		for o := range stream {
+		for c := range stream {
 			count++
 
 			if count >= 10 {
-				millis := float64(o) / 1000
+				millis := float64(c.Diff) / 1000
 				// If the latency is larger than 500 milliseconds when Infura wins,
 				// we consider it a bad measurement and discard it.
 				if millis > -500 {
 					fmt.Println("New observation:", millis)
 					if millis > 0 {
-						m.observations.WithLabelValues("fiber").Observe(millis)
+						m.observations.WithLabelValues(c.Winner).Observe(millis)
 					} else {
-						m.observations.WithLabelValues("node").Observe(-millis)
+						m.observations.WithLabelValues(c.Winner).Observe(-millis)
 					}
 					count = 0
 				}
@@ -69,88 +80,137 @@ func (m *MetricsService) Run(stream chan int64) {
 	http.ListenAndServe(":2112", nil)
 }
 
-func NewIngester(ethclient *gethclient.Client, fiberClient *fiber.Client) *Ingester {
+func NewIngester(sources map[string]MempoolSource) *Ingester {
+	results := make(map[string]*shardmap.FIFOMap[string, int64], len(sources))
+
+	for name := range sources {
+		results[name] = shardmap.NewFIFOMap[string, int64](16384, 2, shardmap.HashString)
+	}
+
 	return &Ingester{
-		client:        ethclient,
-		fiberClient:   fiberClient,
-		infuraResults: shardmap.NewFIFOMap[string, int64](16384, 2, shardmap.HashString),
-		fiberResults:  shardmap.NewFIFOMap[string, int64](16384, 2, shardmap.HashString),
+		sources: sources,
+		results: results,
 	}
 }
 
-func (i *Ingester) RecordCollisions() chan int64 {
-	collisions := make(chan int64, 128)
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+type Collision struct {
+	Winner string
+	Diff   int64
+	Hash   common.Hash
+}
 
-	sink := make(chan common.Hash)
-	_, err := i.client.SubscribePendingTransactions(ctx, sink)
-	if err != nil {
-		panic(err)
-	}
+func (i *Ingester) RecordCollisions() chan Collision {
+	collisions := make(chan Collision, 128)
 
-	fiberSub := make(chan *fiber.Transaction)
-	go func() {
-		if err := i.fiberClient.SubscribeNewTxs(nil, fiberSub); err != nil {
+	subs := make(map[string]chan common.Hash, len(i.sources))
+
+	for name, source := range i.sources {
+		sub, err := source.SubscribePendingTransactions(context.Background())
+		if err != nil {
 			panic(err)
 		}
-	}()
 
-	go func() {
-		for {
-			select {
-			case tx := <-fiberSub:
-				ts := time.Now().UnixMicro()
-				hash := tx.Hash.Hex()
-				if ts2, ok := i.infuraResults.Get(hash); ok {
-					collisions <- ts2 - ts
-				} else {
-					if ok := i.fiberResults.Has(hash); !ok {
-						i.fiberResults.Put(hash, ts)
+		subs[name] = sub
+	}
+
+	// We only want to compare Fiber to the other sources, not the other sources with
+	// each other.
+	for name, sub := range subs {
+		if name == "fiber" {
+			go func(name string, sub chan common.Hash) {
+				for hash := range sub {
+					// Check if the hash exists in the other sources.
+					ts := time.Now().UnixMicro()
+					i.results["fiber"].Put(hash.Hex(), ts)
+				inner:
+					for otherName, otherResults := range i.results {
+						if otherName != "fiber" {
+							if otherTs, ok := otherResults.Get(hash.Hex()); ok {
+								// We have a collision!
+
+								collisions <- Collision{
+									Winner: otherName,
+									Diff:   otherTs - ts,
+									Hash:   hash,
+								}
+
+								// After collision, break this loop
+								break inner
+							}
+						}
 					}
 				}
+			}(name, sub)
+		} else {
+			go func(name string, sub chan common.Hash) {
+				for hash := range sub {
+					ts := time.Now().UnixMicro()
+					i.results[name].Put(hash.Hex(), ts)
 
-			case hash := <-sink:
-				str := hash.Hex()
-				ts := time.Now().UnixMicro()
-				if ts2, ok := i.fiberResults.Get(str); ok {
-					collisions <- ts - ts2
-				} else {
-					if ok := i.infuraResults.Has(str); !ok {
-						i.infuraResults.Put(str, ts)
+					if fiberTs, ok := i.results["fiber"].Get(hash.Hex()); ok {
+						// We have a collision!
+
+						collisions <- Collision{
+							Winner: "fiber",
+							Diff:   ts - fiberTs,
+							Hash:   hash,
+						}
 					}
 				}
-			}
+			}(name, sub)
 		}
-	}()
+	}
 
 	return collisions
 }
 
 func main() {
-	err := godotenv.Load()
+	var cfg Config
+	_, err := toml.DecodeFile("config.toml", &cfg)
 	if err != nil {
 		panic(err)
 	}
 
-	infuraUrl := os.Getenv("WEB3_API")
-	fiberUrl := os.Getenv("FIBER_API")
-	fiberAPI := os.Getenv("FIBER_API_KEY")
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	c, err := rpc.DialContext(ctx, infuraUrl)
+	fmt.Printf("%+v\n", cfg)
+	err = godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
 
-	client := gethclient.New(c)
-	fiberClient := fiber.NewClient(fiberUrl, fiberAPI)
+	mempoolSources := make(map[string]MempoolSource)
 
-	if err := fiberClient.Connect(ctx); err != nil {
-		panic(err)
+	for name, source := range cfg.Sources {
+		switch name {
+		case "fiber":
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			fiber := sources.NewFiberSource(source.Endpoint, source.Key)
+			if err := fiber.Connect(ctx); err != nil {
+				panic(err)
+			}
+			mempoolSources[name] = fiber
+		case "bloxroute":
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			blxr := sources.NewBloxrouteSource(source.Endpoint, source.Key)
+			if err := blxr.Connect(ctx); err != nil {
+				panic(err)
+			}
+
+			mempoolSources[name] = blxr
+		case "web3":
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			w3 := sources.NewWeb3Source(source.Endpoint)
+			if err := w3.Connect(ctx); err != nil {
+				panic(err)
+			}
+
+			mempoolSources[name] = w3
+		}
 	}
 
-	i := NewIngester(client, fiberClient)
+	i := NewIngester(mempoolSources)
 
 	m := NewMetrics()
 

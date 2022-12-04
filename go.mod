@@ -3,9 +3,11 @@ module github.com/chainbound/fiber-stats
 go 1.18
 
 require (
+	github.com/BurntSushi/toml v1.2.1
 	github.com/chainbound/fiber-go v1.4.0
 	github.com/chainbound/shardmap v0.0.2
 	github.com/ethereum/go-ethereum v1.10.26
+	github.com/gorilla/websocket v1.4.2
 	github.com/joho/godotenv v1.4.0
 	github.com/prometheus/client_golang v1.14.0
 )
@@ -21,7 +23,6 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/huin/goupnp v1.0.3 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect

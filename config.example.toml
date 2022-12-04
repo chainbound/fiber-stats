@@ -1,0 +1,10 @@
+[sources.fiber]
+endpoint = "fiberapi.io:8080"
+key = "my-api-key"
+
+[sources.web3]
+endpoint = "https://mainnet.infura.io/v3/your-api-key"
+
+[sources.bloxroute]
+endpoint = "wss://uk.eth.blxrbdn.com/ws"
+key = "my-api-key"
