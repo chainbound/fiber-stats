@@ -34,7 +34,7 @@
         "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
-        "h": 3,
+        "h": 4,
         "w": 24,
         "x": 0,
         "y": 0
@@ -46,7 +46,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "This dashboard is a live overview of the performance of\nFiber as compared to other mempool sources, as measured\nfrom **Vint Hill, Virginia**. Latency to all sources is sub 2 ms.\n\nAll rates are measured over a 10 minute window.",
+        "content": "This dashboard is a live overview of the performance of\nFiber as compared to other mempool sources, as measured\nfrom **Vint Hill, Virginia**. Latency to all sources is sub 2 ms.\n* Fiber plan: Basic\n* Bloxroute plan: Enterprise",
         "mode": "markdown"
       },
       "pluginVersion": "9.3.0",
@@ -147,7 +147,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 3
+        "y": 4
       },
       "id": 4,
       "options": {
@@ -168,9 +168,9 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "editorMode": "code",
-          "expr": "rate(fiber_latency_diff_count[10m])",
-          "legendFormat": "{{winner}}",
+          "editorMode": "builder",
+          "expr": "sum by(winner) (rate(fiber_latency_diff_count[10m]))",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
@@ -241,7 +241,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 3
+        "y": 4
       },
       "id": 2,
       "options": {
@@ -335,7 +335,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 12
       },
       "id": 10,
       "options": {
@@ -358,7 +358,7 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.5, rate(fiber_latency_diff_bucket{winner=\"fiber\"}[10m]))",
-          "legendFormat": "median (p50)",
+          "legendFormat": "median (p50) ({{loser}})",
           "range": true,
           "refId": "A"
         },
@@ -370,7 +370,7 @@
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, rate(fiber_latency_diff_bucket{winner=\"fiber\"}[10m]))",
           "hide": false,
-          "legendFormat": "p90",
+          "legendFormat": "p90 ({{loser}})",
           "range": true,
           "refId": "B"
         }
@@ -387,13 +387,13 @@
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Fiber Stats",
   "uid": "h4zwdDK4z",
-  "version": 5,
+  "version": 7,
   "weekStart": ""
 }

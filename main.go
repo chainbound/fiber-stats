@@ -47,7 +47,7 @@ func NewMetrics() *MetricsService {
 			Name:    "fiber_latency_diff",
 			Help:    "Latency between Fiber and other mempool sources",
 			Buckets: []float64{0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500},
-		}, []string{"winner"}),
+		}, []string{"winner", "loser"}),
 	}
 }
 
@@ -64,9 +64,9 @@ func (m *MetricsService) Run(stream chan Collision) {
 				if millis > -2000 {
 					fmt.Println("New observation:", c)
 					if millis > 0 {
-						m.observations.WithLabelValues(c.Winner).Observe(millis)
+						m.observations.WithLabelValues(c.Winner, c.Loser).Observe(millis)
 					} else {
-						m.observations.WithLabelValues(c.Winner).Observe(-millis)
+						m.observations.WithLabelValues(c.Winner, c.Loser).Observe(-millis)
 					}
 					count = 0
 				}
@@ -95,6 +95,7 @@ func NewIngester(sources map[string]MempoolSource) *Ingester {
 
 type Collision struct {
 	Winner string
+	Loser  string
 	Diff   int64
 	Hash   common.Hash
 }
@@ -130,6 +131,7 @@ func (i *Ingester) RecordCollisions() chan Collision {
 
 								collisions <- Collision{
 									Winner: otherName,
+									Loser:  "fiber",
 									Diff:   otherTs - ts,
 									Hash:   hash,
 								}
@@ -152,6 +154,7 @@ func (i *Ingester) RecordCollisions() chan Collision {
 
 						collisions <- Collision{
 							Winner: "fiber",
+							Loser:  name,
 							Diff:   ts - fiberTs,
 							Hash:   hash,
 						}
