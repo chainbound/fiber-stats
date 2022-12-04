@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 2,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -112,13 +112,31 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "node"
+              "options": "web3"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
                   "mode": "continuous-RdYlGr"
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "infura"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bloxroute"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-BlPu"
                 }
               }
             ]
@@ -151,7 +169,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(fiber_node_latency_count[10m])",
+          "expr": "rate(fiber_latency_diff_count[10m])",
           "legendFormat": "{{winner}}",
           "range": true,
           "refId": "A"
@@ -245,7 +263,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(rate(fiber_node_latency_count{winner=\"fiber\"}[10m])) / sum(rate(fiber_node_latency_count[10m])) * 100",
+          "expr": "sum(rate(fiber_latency_diff_count{winner=\"fiber\"}[10m])) / sum(rate(fiber_latency_diff_count[10m])) * 100",
           "hide": false,
           "legendFormat": "percentage",
           "range": true,
@@ -270,7 +288,6 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisSoftMax": 1500,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -315,8 +332,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 9,
+        "w": 24,
         "x": 0,
         "y": 11
       },
@@ -340,7 +357,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, rate(fiber_node_latency_bucket{winner=\"fiber\"}[10m]))",
+          "expr": "histogram_quantile(0.5, rate(fiber_latency_diff_bucket{winner=\"fiber\"}[10m]))",
           "legendFormat": "median (p50)",
           "range": true,
           "refId": "A"
@@ -351,7 +368,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, rate(fiber_node_latency_bucket{winner=\"fiber\"}[10m]))",
+          "expr": "histogram_quantile(0.90, rate(fiber_latency_diff_bucket{winner=\"fiber\"}[10m]))",
           "hide": false,
           "legendFormat": "p90",
           "range": true,
@@ -359,112 +376,6 @@
         }
       ],
       "title": "Latency difference when Fiber wins",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1500,
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 11
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.5, rate(fiber_node_latency_bucket{winner=\"node\"}[10m]))",
-          "legendFormat": "median (p50)",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.90, rate(fiber_node_latency_bucket{winner=\"node\"}[10m]))",
-          "hide": false,
-          "legendFormat": "p90",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Latency difference when node wins",
       "type": "timeseries"
     }
   ],
@@ -476,13 +387,13 @@
     "list": []
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Fiber Stats",
   "uid": "h4zwdDK4z",
-  "version": 12,
+  "version": 5,
   "weekStart": ""
 }
