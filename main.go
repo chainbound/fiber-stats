@@ -35,7 +35,7 @@ func NewMetrics() *MetricsService {
 		observations: promauto.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "fiber_node_latency",
 			Help:    "Latency between Fiber and your node.",
-			Buckets: []float64{0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500},
+			Buckets: []float64{0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
 		}, []string{"winner"}),
 	}
 }
@@ -73,8 +73,8 @@ func NewIngester(ethclient *gethclient.Client, fiberClient *fiber.Client) *Inges
 	return &Ingester{
 		client:        ethclient,
 		fiberClient:   fiberClient,
-		infuraResults: shardmap.NewFIFOMap[string, int64](16384, 2, shardmap.HashString),
-		fiberResults:  shardmap.NewFIFOMap[string, int64](16384, 2, shardmap.HashString),
+		infuraResults: shardmap.NewFIFOMap[string, int64](2048, 2, shardmap.HashString),
+		fiberResults:  shardmap.NewFIFOMap[string, int64](2048, 2, shardmap.HashString),
 	}
 }
 
