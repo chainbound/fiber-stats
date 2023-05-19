@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 1,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -49,7 +49,7 @@
         "content": "This dashboard is a live overview of the performance of\nFiber as compared to other mempool sources, as measured\nfrom **Vint Hill, Virginia**. Latency to all sources is sub 2 ms.\n\nAll rates are measured over a 10 minute window.",
         "mode": "markdown"
       },
-      "pluginVersion": "9.3.0",
+      "pluginVersion": "9.5.2",
       "title": "Fiber Stats",
       "type": "text"
     },
@@ -316,7 +316,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 11
       },
@@ -340,34 +340,11 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, rate(fiber_node_latency_bucket{winner=\"node\"}[10m]))",
-          "hide": true,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
           "expr": "histogram_quantile(0.50, rate(fiber_node_latency_bucket{winner=\"fiber\"}[10m]))",
-          "hide": true,
-          "legendFormat": "p90",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "name": "Expression",
-            "type": "__expr__",
-            "uid": "__expr__"
-          },
-          "expression": "$B - $A",
           "hide": false,
-          "refId": "infura (p50)",
-          "type": "math"
+          "legendFormat": "p50",
+          "range": true,
+          "refId": "p50"
         },
         {
           "datasource": {
@@ -376,10 +353,105 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, rate(fiber_node_latency_bucket{winner=\"fiber\"}[10m]))",
-          "hide": true,
+          "hide": false,
           "legendFormat": "p90",
           "range": true,
-          "refId": "C"
+          "refId": "p95"
+        }
+      ],
+      "title": "Latency Difference (Fiber wins)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1500,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, rate(fiber_node_latency_bucket{winner=\"node\"}[10m]))",
+          "hide": false,
+          "legendFormat": "p50",
+          "range": true,
+          "refId": "p50"
         },
         {
           "datasource": {
@@ -388,42 +460,31 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, rate(fiber_node_latency_bucket{winner=\"node\"}[10m]))",
-          "hide": true,
+          "hide": false,
           "legendFormat": "p90",
           "range": true,
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "name": "Expression",
-            "type": "__expr__",
-            "uid": "__expr__"
-          },
-          "expression": "$C - $D",
-          "hide": false,
-          "refId": "infura (p90)",
-          "type": "math"
+          "refId": "p95"
         }
       ],
-      "title": "Latency Difference",
+      "title": "Latency Difference (Infura wins)",
       "type": "timeseries"
     }
   ],
   "refresh": "30s",
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Fiber Stats",
   "uid": "h4zwdDK4z",
-  "version": 9,
+  "version": 2,
   "weekStart": ""
 }
